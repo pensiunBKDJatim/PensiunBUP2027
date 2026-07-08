@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pensiun 2027</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fb; margin: 0; padding: 0; color: #333; }
+        
+        /* --- HEADER STYLES --- */
+        header {
+            background-color: #ffffff;
+            padding: 12px 5%; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-logo { height: 42px; width: auto; }
+        .header-text { text-align: left; line-height: 1.1; }
+        .header-text h1 { margin: 0; font-size: 1.15em; color: #002b5e; font-weight: 800; }
+        .header-text p { margin: 0; font-size: 0.8em; color: #0055a4; font-weight: 600; }
+
+        .header-right { text-align: right; line-height: 1.2; }
+        .header-right h2 { margin: 0; font-size: 1.05em; color: #1e3c72; font-weight: bold; }
+        .header-right p { margin: 0; font-size: 0.8em; color: #777; }
+        
+        .container { max-width: 1100px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        /* --- SUMMARY CARDS --- */
+        .summary-cards { 
+            display: flex; justify-content: space-between; margin-bottom: 30px; gap: 15px; flex-wrap: wrap; 
+        }
+        .card { 
+            flex: 1; min-width: 140px; background: #e9f0f8; padding: 20px 10px; border-radius: 8px; 
+            text-align: center; border-left: 5px solid #2a5298; 
+        }
+        .card h3 { margin: 0 0 10px 0; font-size: 0.95em; color: #555; }
+        .card .value { font-size: 2em; font-weight: bold; color: #1e3c72; }
+
+        /* Container untuk Grafik */
+        .chart-wrapper {
+            background: #fdfdfd; border: 1px solid #eee; border-radius: 8px;
+            padding: 20px; max-width: 500px; margin: 20px auto 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        footer { text-align: center; padding: 20px; color: #777; font-size: 0.9em; margin-top: 40px; }
+        #loading { text-align: center; padding: 20px; font-weight: bold; color: #1e3c72; }
+
+        /* =========================================================
+           TAMBAHAN KODE UNTUK MEMPERBAIKI TAMPILAN HP & TABLET 
+           ========================================================= */
+        @media (max-width: 768px) {
+            /* Perbaikan Header agar ke tengah semua */
+            header {
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+                padding: 15px 20px;
+            }
+            .header-left {
+                flex-direction: column; /* Logo di atas teks */
+                justify-content: center;
+                gap: 8px;
+            }
+            .header-text {
+                text-align: center;
+            }
+            .header-logo {
+                height: 50px; /* Logo sedikit dibesarkan di HP */
+            }
+            .header-right {
+                text-align: center;
+                margin-top: 10px;
+                padding-top: 12px;
+                border-top: 1px dashed #ccc; /* Garis batas pemisah yang rapi */
+                width: 100%;
+            }
+
+            /* Perbaikan Container & Spasi Layar */
+            .container {
+                margin: 20px 10px;
+                padding: 20px 15px;
+            }
+
+            /* Perbaikan Kartu agar menjadi 2 Kolom menyamping */
+            .summary-cards {
+                gap: 10px;
+            }
+            .card {
+                flex: 1 1 45%; /* Paksa agar mengambil 45% layar (2 kolom) */
+                min-width: 120px;
+                padding: 15px 5px;
+            }
+            .card h3 {
+                font-size: 0.85em; /* Perkecil teks sedikit */
+            }
+            .card .value {
+                font-size: 1.6em; /* Perkecil angka agar tidak keluar dari kotak */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <img src="BKDJATIM.png" alt="Logo BKD Jatim" class="header-logo">
+        <div class="header-text">
+            <h1>Badan Kepegawaian Daerah</h1>
+            <p>Provinsi Jawa Timur</p>
+        </div>
+    </div>
+    
+    <div class="header-right">
+        <h2>Bidang Mutasi</h2>
+        <p>Rekapitulasi Usulan BUP Tahun 2027</p>
+    </div>
+</header>
+
+<div class="container">
+    
+    <div id="loading">Sinkronisasi Database ALL_PD...</div>
+
+    <div id="dashboard-content" style="display: none;">
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total Pegawai</h3>
+                <div class="value" id="total-pegawai">0</div>
+            </div>
+            <div class="card">
+                <h3>Jumlah BTS</h3>
+                <div class="value" id="jumlah-bts">0</div>
+            </div>
+            <div class="card">
+                <h3>Input SIASN</h3>
+                <div class="value" id="input-siasn">0</div>
+            </div>
+            <div class="card">
+                <h3>Sudah TTD Pertek</h3>
+                <div class="value" id="sudah-ttd">0</div>
+            </div>
+            <div class="card">
+                <h3>Proses Selesai</h3>
+                <div class="value" id="proses-selesai">0</div>
+            </div>
+        </div>
+
+        <h2 style="text-align: center; margin-top: 40px; color: #333; font-size: 1.3em;">Grafik Proporsi Status Usulan Keseluruhan</h2>
+        <div class="chart-wrapper">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Badan Kepegawaian Daerah Provinsi Jawa Timur. Bidang Mutasi Sub Bidang Perpindahan dan Pensiun.
+</footer>
+
+<script>
+    const SPREADSHEET_ID = '1mFlbbz1sbBy0jpGn0yFqADlvLxA6g8jeB6IODVD6ocg'; 
+    
+    // Hanya menargetkan satu sheet utama bernama ALL_PD
+    const SHEET_TITLE = 'ALL_PD'; 
+    let myChart = null; 
+
+    async function fetchData() {
+        const loading = document.getElementById('loading');
+        const dashboardContent = document.getElementById('dashboard-content');
+        
+        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_TITLE)}&tqx=out:json`;
+
+        try {
+            const response = await fetch(SHEET_URL);
+            const text = await response.text();
+            
+            const jsonString = text.substring(47).slice(0, -2);
+            const data = JSON.parse(jsonString);
+            const rows = data.table.rows;
+            
+            // Variabel Penghitung Baru
+            let totalPegawai = 0;
+            let jumlahBTS = 0;
+            let inputSiasn = 0; 
+            let sudahTTD = 0; 
+            let prosesSelesai = 0;
+
+            rows.forEach(row => {
+                const nama = row.c[1] ? row.c[1].v : '';
+                const status = row.c[4] ? row.c[4].v : '';
+
+                if(nama) { 
+                    totalPegawai++; 
+                    
+                    if (status) {
+                        const textStatus = status.toLowerCase();
+                        
+                        // Kriteria penghitungan berdasarkan teks status
+                        if (textStatus.includes('bts')) {
+                            jumlahBTS++;
+                        }
+                        if (textStatus.includes('kirim usulan')) {
+                            inputSiasn++;
+                        }
+                        if (textStatus.includes('ttd') || textStatus.includes('pertek')) {
+                            sudahTTD++;
+                        }
+                        if (textStatus.includes('ttesk')) {
+                            prosesSelesai++;
+                        }
+                    }
+                }
+            });
+
+            // Tampilkan kembali konten dashboard setelah selesai menghitung
+            loading.style.display = 'none';
+            dashboardContent.style.display = 'block';
+
+            // Masukkan angka ke masing-masing kartu
+            document.getElementById('total-pegawai').innerText = totalPegawai;
+            document.getElementById('jumlah-bts').innerText = jumlahBTS;
+            document.getElementById('input-siasn').innerText = inputSiasn;
+            document.getElementById('sudah-ttd').innerText = sudahTTD; 
+            document.getElementById('proses-selesai').innerText = prosesSelesai;
+
+            // Panggil fungsi pembuat grafik dengan data baru
+            renderChart(jumlahBTS, inputSiasn, sudahTTD, prosesSelesai, totalPegawai);
+
+        } catch (error) {
+            console.error('Gagal mengambil data:', error);
+            loading.innerText = `Gagal memuat data dari sheet "${SHEET_TITLE}". Pastikan nama sheet di Google Drive adalah ALL_PD dan akses sudah publik.`;
+            loading.style.color = 'red';
+        }
+    }
+
+    function renderChart(bts, siasn, ttdPertek, selesai, total) {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        
+        let sisa = total - (bts + siasn + ttdPertek + selesai);
+        if (sisa < 0) sisa = 0; 
+        
+        if (myChart !== null) {
+            myChart.destroy();
+        }
+        
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Jumlah BTS', 'Input SIASN', 'Sudah TTD Pertek', 'Proses Selesai', 'Belum Usul'],
+                datasets: [{
+                    data: [bts, siasn, ttdPertek, selesai, sisa],
+                    backgroundColor: [
+                        '#ffc107', // Kuning (BTS)
+                        '#fd7e14', // Oranye (SIASN)
+                        '#17a2b8', // Biru (TTD Pertek)
+                        '#28a745', // Hijau (Selesai)
+                        '#e9ecef'  // Abu-abu (Belum Usul)
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    }
+
+    // Jalankan pengambilan data secara otomatis saat halaman web dibuka
+    window.onload = fetchData;
+</script>
+
+</body>
+</html>
