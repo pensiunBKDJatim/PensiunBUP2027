@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pensiun 2027</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fb; margin: 0; padding: 0; color: #333; }
+        
+        /* --- HEADER STYLES --- */
+        header {
+            background-color: #ffffff;
+            padding: 12px 5%; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-logo { height: 42px; width: auto; }
+        .header-text { text-align: left; line-height: 1.1; }
+        .header-text h1 { margin: 0; font-size: 1.15em; color: #002b5e; font-weight: 800; }
+        .header-text p { margin: 0; font-size: 0.8em; color: #0055a4; font-weight: 600; }
+
+        .header-right { text-align: right; line-height: 1.2; }
+        .header-right h2 { margin: 0; font-size: 1.05em; color: #1e3c72; font-weight: bold; }
+        .header-right p { margin: 0; font-size: 0.8em; color: #777; }
+        
+        .container { max-width: 1000px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        /* --- SUMMARY CARDS --- */
+        .summary-cards { 
+            display: flex; justify-content: space-between; margin-bottom: 30px; gap: 15px; flex-wrap: wrap; 
+        }
+        .card { 
+            flex: 1; min-width: 150px; background: #e9f0f8; padding: 20px 10px; border-radius: 8px; 
+            text-align: center; border-left: 5px solid #2a5298; 
+        }
+        .card h3 { margin: 0 0 10px 0; font-size: 1em; color: #555; }
+        .card .value { font-size: 2em; font-weight: bold; color: #1e3c72; }
+        
+        /* --- TAB NAVIGASI --- */
+        .tabs-container {
+            display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; 
+            padding-bottom: 10px; white-space: nowrap; 
+        }
+        .tabs-container::-webkit-scrollbar { height: 8px; }
+        .tabs-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .tabs-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        
+        .tab-btn {
+            padding: 10px 20px; background-color: #e9f0f8; border: none; border-radius: 20px;
+            cursor: pointer; font-weight: bold; color: #2a5298; transition: all 0.3s ease;
+            font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-shrink: 0; 
+        }
+        .tab-btn:hover { background-color: #d2e1f3; }
+        .tab-btn.active { background-color: #1e3c72; color: white; }
+
+        /* Container untuk Grafik */
+        .chart-wrapper {
+            background: #fdfdfd; border: 1px solid #eee; border-radius: 8px;
+            padding: 20px; max-width: 500px; margin: 20px auto 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        footer { text-align: center; padding: 20px; color: #777; font-size: 0.9em; margin-top: 40px; }
+        #loading { text-align: center; padding: 20px; font-weight: bold; color: #1e3c72; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <img src="BKDJATIM.png" alt="Logo BKD Jatim" class="header-logo">
+        <div class="header-text">
+            <h1>Badan Kepegawaian Daerah</h1>
+            <p>Provinsi Jawa Timur</p>
+        </div>
+    </div>
+    
+    <div class="header-right">
+        <h2>Dashboard Pensiun 2027</h2>
+        <p>Rekapitulasi Usulan BUP 2027</p>
+    </div>
+</header>
+
+<div class="container">
+    <div id="tabs-nav" class="tabs-container"></div>
+    
+    <div id="loading">Mengambil data dari Google Drive...</div>
+
+    <div id="dashboard-content" style="display: none;">
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total Pegawai</h3>
+                <div class="value" id="total-pegawai">0</div>
+            </div>
+            <div class="card">
+                <h3>Jumlah BTS</h3>
+                <div class="value" id="jumlah-bts">0</div>
+            </div>
+            <div class="card">
+                <h3>Sudah TTD Pertek</h3>
+                <div class="value" id="sudah-ttd">0</div>
+            </div>
+            <div class="card">
+                <h3>Proses Selesai </h3>
+                <div class="value" id="proses-selesai">0</div>
+            </div>
+        </div>
+
+        <h2 style="text-align: center; margin-top: 40px;">Grafik Proporsi Status Usulan</h2>
+        <div class="chart-wrapper">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<footer>
+    &copy; 2026 Badan Kepegawaian Daerah Provinsi Jawa Timur. Bidang Mutasi Sub Bidang Perpindahan dan Pensiun.
+</footer>
+
+<script>
+    const SPREADSHEET_ID = '1mFlbbz1sbBy0jpGn0yFqADlvLxA6g8jeB6IODVD6ocg'; 
+    
+    const SHEET_TITLES = [
+        'BKD', 'DAHA HUSADA', 'DPMD', 'DLH', 'DINAS ARSIP PERPUS', 'DISPORA', 'M NOER', 'BONDOWOSO', 'BOJONEGORO', 'NGANJUK', 'PASURUAN', 'JEMBER', 'RSUD DR. SOETOMO'
+    ]; 
+
+    let myChart = null; 
+
+    function initTabs() {
+        const tabsNav = document.getElementById('tabs-nav');
+        SHEET_TITLES.forEach((sheetName, index) => {
+            const button = document.createElement('button');
+            button.className = `tab-btn ${index === 0 ? 'active' : ''}`;
+            button.innerText = sheetName;
+            button.onclick = () => switchSheet(sheetName, button);
+            tabsNav.appendChild(button);
+        });
+        fetchData(SHEET_TITLES[0]);
+    }
+
+    function switchSheet(sheetName, clickedButton) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        clickedButton.classList.add('active');
+        fetchData(sheetName);
+    }
+
+    async function fetchData(sheetTitle) {
+        const loading = document.getElementById('loading');
+        const dashboardContent = document.getElementById('dashboard-content');
+        
+        // Sembunyikan konten dan tampilkan tulisan loading
+        dashboardContent.style.display = 'none';
+        loading.style.display = 'block';
+        loading.innerText = `Menghitung data dari Sheet: ${sheetTitle}...`;
+        loading.style.color = '#1e3c72';
+
+        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetTitle)}&tqx=out:json`;
+
+        try {
+            const response = await fetch(SHEET_URL);
+            const text = await response.text();
+            const jsonString = text.substring(47).slice(0, -2);
+            const data = JSON.parse(jsonString);
+            const rows = data.table.rows;
+            
+            // Variabel Penghitung
+            let totalPegawai = 0;
+            let jumlahBTS = 0;
+            let prosesSelesai = 0;
+            let sudahTTD = 0; 
+
+            rows.forEach(row => {
+                // Di sini kita hanya butuh mengecek Nama (c[1]) dan Status (c[4])
+                const nama = row.c[1] ? row.c[1].v : '';
+                const status = row.c[4] ? row.c[4].v : '';
+
+                if(nama) { 
+                    totalPegawai++; 
+                    
+                    if (status) {
+                        const textStatus = status.toLowerCase();
+                        if (textStatus.includes('bts')) {
+                            jumlahBTS++;
+                        }
+                        if (textStatus.includes('pertek')) {
+                            prosesSelesai++;
+                        }
+                        if (textStatus.includes('ttdsk') || textStatus.includes('proses selesai')) {
+                            sudahTTD++;
+                        }
+                    }
+                }
+            });
+
+            // Tampilkan kembali konten dashboard setelah perhitungan selesai
+            loading.style.display = 'none';
+            dashboardContent.style.display = 'block';
+
+            // Update Angka di Kartu Summary
+            document.getElementById('total-pegawai').innerText = totalPegawai;
+            document.getElementById('jumlah-bts').innerText = jumlahBTS;
+            document.getElementById('sudah-ttd').innerText = sudahTTD; 
+            document.getElementById('proses-selesai').innerText = prosesSelesai;
+
+            // Panggil Fungsi Render Grafik
+            renderChart(jumlahBTS, sudahTTD, prosesSelesai, totalPegawai);
+
+        } catch (error) {
+            console.error('Gagal mengambil data:', error);
+            loading.innerText = `Gagal memuat data dari sheet "${sheetTitle}". Pastikan nama tab di Google Sheets benar.`;
+            loading.style.color = 'red';
+        }
+    }
+
+    function renderChart(bts, ttdPertek, selesai, total) {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        
+        let sisa = total - (bts + ttdPertek + selesai);
+        if (sisa < 0) sisa = 0; 
+        
+        if (myChart !== null) {
+            myChart.destroy();
+        }
+        
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Jumlah BTS', 'Sudah TTD Pertek', 'Proses Selesai', 'Belum Usul / Lainnya'],
+                datasets: [{
+                    data: [bts, ttdPertek, selesai, sisa],
+                    backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#e9ecef'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    }
+
+    window.onload = initTabs;
+</script>
+
+</body>
+</html>
